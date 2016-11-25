@@ -1,0 +1,5 @@
+Przyk³ad ataku na TTP (trusted third party, "trusted agent"):
+
+Za³o¿my, ¿e aplikacja u¿ywana jest przez firmê sprzedaj¹c¹ ksi¹¿ki. Atakuj¹cy zauwa¿a rozmowê pomiêdzy Alice i sprzedawc¹ Bobem. 
+Alice zamawia ksi¹¿kê, transakcja jest udana, Alice udaje siê zap³aciæ za ksi¹¿kê (Bob przyjmuje zap³¹te) i w rezultacie j¹ nabywa (Bob wysy³a ksi¹¿kê).
+Atakuj¹cy powtarza ca³¹ konwersacjê, Bob myœli, ¿e Alice zamawia kolejn¹ kopiê ksi¹¿ki i przyk³adowo, znowu obci¹¿a jej konto i wysy³a ksi¹¿kê.  
