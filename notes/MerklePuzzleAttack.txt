@@ -1,0 +1,11 @@
+Algorytmem do szyfrowania jest np. AES128, wtedy klucz jest 128 bitowy. 
+
+Alice dla i = 1, ..., 2^32 wybiera losow P_i = 0^96 || b1,...,b32 
+(gdzie b s¹ losowymi bitami) oraz x_i, k_i maj¹ce d³ugoœæ 128 bitów. 
+Wysy³a puzzle_i <- E(P_i, "Puzzle#x_i||k_i") do Boba. Ten wybiera losowego puzzla i rozwi¹zuje go.
+Odsy³a wartoœæ x_j do Alice i maj¹ wtedy wspólny klucz k_j. 
+
+Poniewa¿ wybraliœmy AES128 z kluczem 128 bitowym, to Alice i Bob musz¹ spêdziæ (ka¿dy z nich) czas 2^32 na generowanie (Alice)
+oraz rozwi¹zywanie (Bob) puzzli. Atakuj¹cy musi rozszyfrowaæ wszystkie puzzle a zatem jego czas jest 2^32 * 2^32 = 2^64. 
+Jest to i tak w miarê krótki czas, a zatem w przypadku tego algorytmu atakuj¹cemu ³atwo zdobyæ tajne klucze sesji k_j.
+

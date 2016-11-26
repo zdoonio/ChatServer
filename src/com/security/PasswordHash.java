@@ -9,14 +9,18 @@ import com.utils.HexUtils;
 /**
  *
  * @author Karol
+ * 
+ * TODO: Choose the algorithm for 
  */
 public class PasswordHash {
+    
     public static final String PBKDF2_ALGORITHM = "PBKDF2WithHmacSHA1";
 
     // The following constants may be changed without breaking existing hashes.
     public static final int SALT_BYTES = 24;
     public static final int HASH_BYTES = 24;
-    public static final int PBKDF2_ITERATIONS = 1000;
+    // Recommended by a 2005 Kerberos standard
+    public static final int PBKDF2_ITERATIONS = 4096;
 
     public static final int ITERATION_INDEX = 0;
     public static final int SALT_INDEX = 1;
@@ -47,15 +51,25 @@ public class PasswordHash {
     public static String createHash(char[] password)
         throws NoSuchAlgorithmException, InvalidKeySpecException
     {
-        // Generate a random salt
-        SecureRandom random = new SecureRandom();
-        byte[] salt = new byte[SALT_BYTES];
-        random.nextBytes(salt);
-
+        // Generate salt
+        byte[] salt = generateSalt();
         // Hash the password
         byte[] hash = pbkdf2(password, salt, PBKDF2_ITERATIONS, HASH_BYTES);
         // format iterations:salt:hash
         return PBKDF2_ITERATIONS + ":" + HexUtils.toHex(salt) + ":" +  HexUtils.toHex(hash);
+    }
+    
+    /**
+     * Returns a generated random salt.
+     * 
+     * @return salt 
+     */
+    private static byte[] generateSalt() 
+    {
+        SecureRandom random = new SecureRandom();
+        byte[] salt = new byte[SALT_BYTES];
+        random.nextBytes(salt);
+        return salt;
     }
 
     /**
