@@ -1,11 +1,14 @@
 package com.security;
 
+import com.utils.ArrayUtils;
 import java.security.InvalidKeyException;
 import java.security.Key;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
+import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.SecretKeySpec;
 
@@ -51,10 +54,13 @@ public class MerklePuzzles {
     // Message prefix used to encrypt and check decryption
     private static final String PREFIX = "Puzzle#"; 
     
+    // Key zero prefix used for encryption
+    private static final byte[] ENC_KEY_PREFIX = new byte[(PUB_SEC_KEY_BITS - ENC_KEY_BITS) / 8]; 
+    
    
     public void setEncryptionKeys() 
     {
-       encryptionKeys = randomKeys(ENC_KEY_BITS, NUM_OF_PUZZLES);
+       encryptionKeys = randomKeys(ENC_KEY_BITS, NUM_OF_PUZZLES, ENC_KEY_PREFIX);
     }
     
     public void setSecretKeys() 
@@ -72,17 +78,39 @@ public class MerklePuzzles {
      * @throws NoSuchAlgorithmException
      * @throws NoSuchPaddingException
      * @throws java.security.InvalidKeyException
+     * @throws javax.crypto.IllegalBlockSizeException
+     * @throws javax.crypto.BadPaddingException
      */
     public void setPuzzles() throws NoSuchAlgorithmException, 
-            NoSuchPaddingException, InvalidKeyException {
+            NoSuchPaddingException, InvalidKeyException, 
+            IllegalBlockSizeException, BadPaddingException {
         
         puzzles = new ArrayList<byte[]>();
+        byte[] prefix = PREFIX.getBytes();
+        byte[] keyPrefix = new byte[(PUB_SEC_KEY_BITS - ENC_KEY_BITS) / 8];
+        
+        // Initialize the cipher
         Cipher cipher = Cipher.getInstance(MERKLE_ALGORITHM);
         
         for(int i = 0; i < NUM_OF_PUZZLES; i++) {
-           Key key = encryptionKeys.get(i);
-           cipher.init(Cipher.ENCRYPT_MODE, key);
+           
+           Key encKey = encryptionKeys.get(i);
+           byte[] pubKey = publicKeys.get(i).getEncoded();
+           byte[] secKey = secretKeys.get(i).getEncoded();
+           
+           cipher.init(Cipher.ENCRYPT_MODE, encKey);
+           
+           byte[] message = ArrayUtils.concatenate(prefix, 
+                   ArrayUtils.concatenate(pubKey, secKey));
+           
+           byte[] puzzle = cipher.doFinal(message);
+
+           puzzles.add(puzzle);
         }
+        
+    }
+    
+    public void solvePuzzles() {
         
     }
     
@@ -110,19 +138,55 @@ public class MerklePuzzles {
     }
     
     /**
+     * 
+     * @param bits   the number of bits for storing the random part of a key
+     * @param loop   how many keys to be produced
+     * @param prefix the prefix of a key 
+     * @return an instance of ArrayLisrt contaning random keys.
+     */
+    private static ArrayList<Key> randomKeys(int bits, int loop, byte[] prefix)
+    {
+        int bytes = bits / 8;
+        ArrayList<Key> keys = new ArrayList<Key>();
+        SecureRandom random = new SecureRandom();
+        
+        for (int i = 0; i < loop; i++) {
+            byte[] message = new byte[bytes];
+            random.nextBytes(message);
+            byte[] wholeMsg = ArrayUtils.concatenate(prefix, message);
+            Key key = new SecretKeySpec(wholeMsg, 0, wholeMsg.length, "AES");
+            keys.add(key);
+        }
+        
+        return keys;
+    }
+    
+    
+    /**
      *  Test the class working
      * @param args
      */
     public static void main(String args[]) {
-     MerklePuzzles mp = new MerklePuzzles();
-     mp.setEncryptionKeys();
-
-     for(Key key : mp.encryptionKeys) {
-             System.out.print(String.valueOf(key));
-         
-         System.out.println();
-     }
-
+     
+        SecureRandom random = new SecureRandom();
+        byte[] msg1 = new byte[8];
+        random.nextBytes(msg1);
+        byte[] msg2 = new byte[8];
+        
+        byte[] msg = ArrayUtils.concatenate(msg2, msg1);
+        
+        for(byte b : msg) {
+            System.out.print(b);
+        }
+        
+        System.out.println();
+        Key key = new SecretKeySpec(msg, 0, msg.length, "AES");
+        
+        for(byte b : key.getEncoded()) {
+            System.out.print(b);
+        }
+        
+        System.out.println();
  }
 
  
