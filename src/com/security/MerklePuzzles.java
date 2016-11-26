@@ -6,6 +6,8 @@ import java.security.Key;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
@@ -58,17 +60,40 @@ public class MerklePuzzles {
     private static final byte[] ENC_KEY_PREFIX = new byte[(PUB_SEC_KEY_BITS - ENC_KEY_BITS) / 8]; 
     
    
-    public void setEncryptionKeys() 
+    public MerklePuzzles() {
+        try {
+            setEncryptionKeys() ;
+            setSecretKeys();
+            setPublicKeys();
+            setPuzzles();
+        } catch (NoSuchAlgorithmException ex) {
+            Logger.getLogger(MerklePuzzles.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (NoSuchPaddingException ex) {
+            Logger.getLogger(MerklePuzzles.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (InvalidKeyException ex) {
+            Logger.getLogger(MerklePuzzles.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (IllegalBlockSizeException ex) {
+            Logger.getLogger(MerklePuzzles.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (BadPaddingException ex) {
+            Logger.getLogger(MerklePuzzles.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+    
+    public ArrayList<byte[]> getPuzzles() {
+        return puzzles;
+    }
+    
+    private void setEncryptionKeys() 
     {
        encryptionKeys = randomKeys(ENC_KEY_BITS, NUM_OF_PUZZLES, ENC_KEY_PREFIX);
     }
     
-    public void setSecretKeys() 
+    private void setSecretKeys() 
     {
        secretKeys = randomKeys(PUB_SEC_KEY_BITS, NUM_OF_PUZZLES);
     }
     
-    public void setPublicKeys()
+    private void setPublicKeys()
     {
        publicKeys = randomKeys(PUB_SEC_KEY_BITS, NUM_OF_PUZZLES);
     }
@@ -81,13 +106,12 @@ public class MerklePuzzles {
      * @throws javax.crypto.IllegalBlockSizeException
      * @throws javax.crypto.BadPaddingException
      */
-    public void setPuzzles() throws NoSuchAlgorithmException, 
+    private void setPuzzles() throws NoSuchAlgorithmException, 
             NoSuchPaddingException, InvalidKeyException, 
             IllegalBlockSizeException, BadPaddingException {
         
         puzzles = new ArrayList<byte[]>();
         byte[] prefix = PREFIX.getBytes();
-        byte[] keyPrefix = new byte[(PUB_SEC_KEY_BITS - ENC_KEY_BITS) / 8];
         
         // Initialize the cipher
         Cipher cipher = Cipher.getInstance(MERKLE_ALGORITHM);
@@ -168,25 +192,16 @@ public class MerklePuzzles {
      */
     public static void main(String args[]) {
      
-        SecureRandom random = new SecureRandom();
-        byte[] msg1 = new byte[8];
-        random.nextBytes(msg1);
-        byte[] msg2 = new byte[8];
-        
-        byte[] msg = ArrayUtils.concatenate(msg2, msg1);
-        
-        for(byte b : msg) {
-            System.out.print(b);
+       
+        MerklePuzzles mp = new MerklePuzzles();
+        ArrayList<byte[]> puzzles = mp.getPuzzles();
+
+        byte[] puzzle = puzzles.get(0);
+
+        for(byte b : puzzle) {
+            System.out.print(String.valueOf(b));
         }
-        
-        System.out.println();
-        Key key = new SecretKeySpec(msg, 0, msg.length, "AES");
-        
-        for(byte b : key.getEncoded()) {
-            System.out.print(b);
-        }
-        
-        System.out.println();
+   
  }
 
  
