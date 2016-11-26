@@ -1,7 +1,13 @@
 package com.security;
 
+import java.security.InvalidKeyException;
+import java.security.Key;
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
+import javax.crypto.Cipher;
+import javax.crypto.NoSuchPaddingException;
+import javax.crypto.spec.SecretKeySpec;
 
 
 /**
@@ -15,13 +21,13 @@ public class MerklePuzzles {
     public static final String MERKLE_ALGORITHM = "AES/GCM/NoPadding";
     
     // To store the keys randomly choosed by Alice.
-    private ArrayList<byte[]> encryptionKeys;
+    private ArrayList<Key> encryptionKeys;
     
     // To store secret keys encrypted in a puzzle.
-    private ArrayList<byte[]> secretKeys;
+    private ArrayList<Key> secretKeys;
     
     // To store public keys, used to exchange between Alice and Bob.
-    private ArrayList<byte[]> publicKeys;
+    private ArrayList<Key> publicKeys;
     
     // Puzzles - encrypted messages.
     private ArrayList<byte[]> puzzles;
@@ -45,34 +51,81 @@ public class MerklePuzzles {
     // Message prefix used to encrypt and check decryption
     private static final String PREFIX = "Puzzle#"; 
     
-    /**
-     * Fill the field encryptionKeys with random keys.
-     */
+   
     public void setEncryptionKeys() 
     {
-       encryptionKeys = new ArrayList<byte[]>();
-       SecureRandom random = new SecureRandom();
-       
-        for (int i = 0; i < NUM_OF_PUZZLES; i++) {
-            byte[] encKey = new byte[ENC_KEY_BITS / 8];
-            random.nextBytes(encKey);
-            encryptionKeys.add(encKey);
-        }
+       encryptionKeys = randomKeys(ENC_KEY_BITS, NUM_OF_PUZZLES);
     }
     
+    public void setSecretKeys() 
+    {
+       secretKeys = randomKeys(PUB_SEC_KEY_BITS, NUM_OF_PUZZLES);
+    }
     
-    public static void main(String args[]) {
-        MerklePuzzles mp = new MerklePuzzles();
-        mp.setEncryptionKeys();
+    public void setPublicKeys()
+    {
+       publicKeys = randomKeys(PUB_SEC_KEY_BITS, NUM_OF_PUZZLES);
+    }
+    
+    /**
+     *
+     * @throws NoSuchAlgorithmException
+     * @throws NoSuchPaddingException
+     * @throws java.security.InvalidKeyException
+     */
+    public void setPuzzles() throws NoSuchAlgorithmException, 
+            NoSuchPaddingException, InvalidKeyException {
         
-        for(byte[] key : mp.encryptionKeys) {
-            for(byte b : key) {
-                System.out.print(String.valueOf(b));
-            }
-            System.out.println();
+        puzzles = new ArrayList<byte[]>();
+        Cipher cipher = Cipher.getInstance(MERKLE_ALGORITHM);
+        
+        for(int i = 0; i < NUM_OF_PUZZLES; i++) {
+           Key key = encryptionKeys.get(i);
+           cipher.init(Cipher.ENCRYPT_MODE, key);
         }
-     
+        
     }
+    
+    /**
+     * 
+     * 
+     * @param bits  the number of bits for storing the message
+     * @param loop  how many messages to be produced
+     * @return      an instance of ArrayList containing random keys
+     */
+    private static ArrayList<Key> randomKeys(int bits, int loop) {
+        
+        int bytes = bits / 8;
+        ArrayList<Key> keys = new ArrayList<Key>();
+        SecureRandom random = new SecureRandom();
+        
+        for (int i = 0; i < loop; i++) {
+            byte[] message = new byte[bytes];
+            random.nextBytes(message);
+            Key key = new SecretKeySpec(message, 0, message.length, "AES");
+            keys.add(key);
+        }
+        
+        return keys;
+    }
+    
+    /**
+     *  Test the class working
+     * @param args
+     */
+    public static void main(String args[]) {
+     MerklePuzzles mp = new MerklePuzzles();
+     mp.setEncryptionKeys();
+
+     for(Key key : mp.encryptionKeys) {
+             System.out.print(String.valueOf(key));
+         
+         System.out.println();
+     }
+
+ }
+
+ 
     
     
 }
