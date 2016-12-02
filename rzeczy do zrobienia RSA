@@ -1,0 +1,4 @@
+- Zmodyfikowac metode write message rozszerzajac ja o rsa generujac przy tym klucz publiczny
+- certyfikacja powinna znajdowac sie tylko na serwerze i byc wysylana pomiedzy klientami 
+- certyfikacje zmienia sie w klasie ClientTheard w pliku Server.java
+- serwer podczas szyfrowania pwoinien wysylac swoj czat message
