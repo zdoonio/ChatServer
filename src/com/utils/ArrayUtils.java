@@ -14,14 +14,30 @@ import java.lang.reflect.Array;
 public class ArrayUtils {
     
     public static byte[] concatenate (byte[] a, byte[] b) {
-    int aLen = a.length;
-    int bLen = b.length;
+        int aLen = a.length;
+        int bLen = b.length;
 
-    @SuppressWarnings("unchecked")
-    byte[] c = (byte[]) Array.newInstance(a.getClass().getComponentType(), aLen+bLen);
-    System.arraycopy(a, 0, c, 0, aLen);
-    System.arraycopy(b, 0, c, aLen, bLen);
+        @SuppressWarnings("unchecked")
+        byte[] c = (byte[]) Array.newInstance(a.getClass().getComponentType(), aLen+bLen);
+        System.arraycopy(a, 0, c, 0, aLen);
+        System.arraycopy(b, 0, c, aLen, bLen);
 
-    return c;
-}
+        return c;
+    }
+    
+    public static byte[] parseBytes(String byteLine) {
+        String[] byteValues = byteLine
+                .substring(1, byteLine.length() - 1)
+                .split(",");
+        
+        byte[] bytes = new byte[byteValues.length];
+        
+        for (int i=0, len=bytes.length; i<len; i++) {
+            bytes[i] = Byte.parseByte(byteValues[i].trim());     
+        }
+        
+        return bytes;
+    }
+    
+
 }

@@ -5,11 +5,19 @@
  */
 package com.security;
 
+
+import com.utils.ArrayUtils;
+import com.utils.FileUtils;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.crypto.BadPaddingException;
@@ -53,6 +61,30 @@ public class MerklePuzzles {
     // A secure random generator, used in chossing a random key
     private final SecureRandom random;
     
+    // default name of the file for storing puzzles
+    public static final String FILE_NAME = "puzzles.txt";
+    
+    // Standard prefix
+    public static final String PREFIX = "Puzzle#";
+    
+    
+    /**
+     * Default constructor, setting AES as an algorithm 
+     * and prefix defined with the constant field PREFIX.
+     */
+    public MerklePuzzles() {
+        this(algorithms.AES, null);
+    }
+    
+    /**
+     * Constructor with default prefix but chosen algorithm.
+     * @param algo 
+     */
+    public MerklePuzzles(algorithms algo) {
+        this(algo, null);
+    }
+    
+    
     /**
      * Create an instance of merkle puzzles with a specified 
      * algorithm to be used for encryption and decryption, as well as
@@ -84,7 +116,7 @@ public class MerklePuzzles {
             Logger.getLogger(MerklePuzzles.class.getName()).log(Level.SEVERE, null, ex);
         }
         random = new SecureRandom();
-        prefix = pref;
+        prefix = pref == null ? PREFIX : pref;
     }
     
     /**
@@ -115,28 +147,31 @@ public class MerklePuzzles {
     }
     
     /**
-     * Choose random keys for encryption of the puzzles.
-     * @return 
+     * Choose keys for encryption of the puzzles.
+     * The keys are always in a form k || 0, where the length of
+     * k is specified with the field encKeyLen, and actual length 
+     * of 0 is encKeyLen - secKeyLen (in bits, while of course
+     * we use here this lengths in bytes).
+     * @return the SecretKey instance of a key 
      */
     public SecretKey randomEncKey() {
         byte[] preKey = randomString(encKeyLenBytes).getBytes();
         byte[] realKey = new byte[secKeyLenBytes];
-        
         System.arraycopy(preKey, 0, realKey, 0, encKeyLenBytes);
-        
         SecretKey sks = new SecretKeySpec(realKey, algorithm);
         return sks;
     }
     
     /**
-     * Encrypt a message with a secret key. Used when constructing puzzles.
-     * @param key
-     * @param message
+     * Encrypt a message with a secret key. 
+     * Used when constructing puzzles.
+     * @param key      SecretKey used for encryption
+     * @param message  message to be encrypted
      * @return an encryption of a message
      */
     public byte[] encrypt(SecretKey key, String message) {
-        byte[] byteMsg = message.getBytes();
         try {
+            byte[] byteMsg = message.getBytes("UTF8");
             cipher.init(Cipher.ENCRYPT_MODE, key);
             byte[] ciphertext = cipher.doFinal(byteMsg);
             return ciphertext;
@@ -146,30 +181,31 @@ public class MerklePuzzles {
             Logger.getLogger(MerklePuzzles.class.getName()).log(Level.SEVERE, null, ex);
         } catch (BadPaddingException ex) {
             Logger.getLogger(MerklePuzzles.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (UnsupportedEncodingException ex) {
+            Logger.getLogger(MerklePuzzles.class.getName()).log(Level.SEVERE, null, ex);
         }
         return null;
     } 
     
     /**
-     * Decrypt a ciphertext using a secret key. May be used for solving the puzzle.
-     * @param key
-     * @param ciphertext
+     * Decrypt a ciphertext using a secret key. 
+     * May be used for solving the puzzle.
+     * @param key         the key for decryption
+     * @param ciphertext  a ciphertext to decrypt
      * @return a decyption of a ciphertext
+     * @throws java.security.InvalidKeyException
+     * @throws javax.crypto.IllegalBlockSizeException
+     * @throws javax.crypto.BadPaddingException
+     * @throws java.io.UnsupportedEncodingException
      */
-    public String decrypt(SecretKey key, byte[] ciphertext) {
-        try {
+    public String decrypt(SecretKey key, byte[] ciphertext) throws 
+            InvalidKeyException, IllegalBlockSizeException, 
+            BadPaddingException, UnsupportedEncodingException {
             cipher.init(Cipher.DECRYPT_MODE, key);
             byte[] decipherBytes = cipher.doFinal(ciphertext);
-            String plaintext = new String(decipherBytes);
+            String plaintext = new String(decipherBytes, "UTF8");
             return plaintext;
-        } catch (IllegalBlockSizeException ex) {
-            Logger.getLogger(MerklePuzzles.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (BadPaddingException ex) {
-            Logger.getLogger(MerklePuzzles.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (InvalidKeyException ex) {
-            Logger.getLogger(MerklePuzzles.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        return null;
+        
     }
     
     /**
@@ -187,7 +223,7 @@ public class MerklePuzzles {
     
     /**
      * Make puzzles. Beware of the memory usage. 
-     * TODO : save puzzles into a file.
+     * 
      * @param key - to be used for encryption
      * @param numOfPuzzles - number of puzzles to create
      * @return instance of ArrayList containing puzzles - encrypted messages.
@@ -198,6 +234,35 @@ public class MerklePuzzles {
             puzzles.add(i, puzzle(key));
         }
         return puzzles;
+    }
+    
+    /**
+     * Make puzzles and write them into a file.
+     * @param key
+     * @param numOfPuzzles
+     * @param fileName 
+     */
+    public void puzzles(SecretKey key, int numOfPuzzles, String fileName) {
+        
+        String filename = fileName == null ? FILE_NAME : fileName;
+        File file = null;
+        PrintWriter pw = null;
+        try {
+            file = new File(filename);
+            pw = new PrintWriter(file);
+            
+            for(int i = 0; i < numOfPuzzles; i++) {
+                byte[] puzzle = puzzle(key);
+                String puzzleStr = Arrays.toString(puzzle);
+                pw.print(puzzleStr + System.lineSeparator());
+            }
+            
+            pw.close();
+            
+        } catch (FileNotFoundException ex) {
+            Logger.getLogger(MerklePuzzles.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
     }
     
     /**
@@ -215,14 +280,27 @@ public class MerklePuzzles {
     public String getPrefix() {
         return prefix;
     }
+
     
     
     public static void main(String args[]) {
-        MerklePuzzles mp = new MerklePuzzles(algorithms.AES, "Pref");
-        SecretKey sk = mp.randomEncKey();
         
-        ArrayList<byte[]> puzzles = mp.puzzles(sk, 100000);
-        System.out.println(puzzles.size());
+        try {
+            MerklePuzzles mp = new MerklePuzzles();
+            SecretKey sk = mp.randomEncKey();
+            ArrayList<byte[]> puzzles = mp.puzzles(sk, 3);
+            byte[] puzzleByte = puzzles.get(0);
+            String decryption = mp.decrypt(sk, puzzleByte);
+            System.out.println(decryption);
+        } catch (InvalidKeyException ex) {
+            Logger.getLogger(MerklePuzzles.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (IllegalBlockSizeException ex) {
+            Logger.getLogger(MerklePuzzles.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (BadPaddingException ex) {
+            Logger.getLogger(MerklePuzzles.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (UnsupportedEncodingException ex) {
+            Logger.getLogger(MerklePuzzles.class.getName()).log(Level.SEVERE, null, ex);
+        }
         
     }
     
