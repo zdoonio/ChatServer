@@ -1,8 +1,12 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
 package com.security;
 
-import com.utils.ArrayUtils;
+import java.math.BigInteger;
 import java.security.InvalidKeyException;
-import java.security.Key;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
@@ -12,64 +16,130 @@ import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
+import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
-
 
 /**
  *
  * @author Karol
- * TODO: Enable different encryption algorithms for encryption of puzzles.
  */
 public class MerklePuzzles {
     
-    // Algorithm to be used to encrypt/decrypt puzzles. 
-    public static final String MERKLE_ALGORITHM = "AES/GCM/NoPadding";
+    // Algorithms available for this puzzles.
+    public static enum algorithms {DES, DESede, AES};
     
-    // To store the keys randomly choosed by Alice.
-    private ArrayList<Key> encryptionKeys;
+    // Chosen algorithm
+    private String algorithm;
     
-    // To store secret keys encrypted in a puzzle.
-    private ArrayList<Key> secretKeys;
+    // Prefix for encrypting a message, e.g. "Puzzle#"
+    private final String prefix;
+
+    // the key length for encryption (in bits) - the actual value 
+    // for which the random key would be computed, e.g.
+    // in case of AES it is 32 and rest 96 bits is occupied by zeros.
+    private int encKeyLen;
     
-    // To store public keys, used to exchange between Alice and Bob.
-    private ArrayList<Key> publicKeys;
+    // The actual length of the secret key for encryption (in bits)
+    // e.g. in case of aes it's 128
+    private int secKeyLen;
     
-    // Puzzles - encrypted messages.
-    private ArrayList<byte[]> puzzles;
+    // Corresponding key lengths in bytes
+    private int encKeyLenBytes;
+    private int secKeyLenBytes;
     
-    // Public key that is send from Bob to Alice.
-    private byte[] publicKey;
+    // An instance of cipher, used for encryption and decryption
+    private Cipher cipher;
     
-    // number of bits for encryptionKeys, for AES128 it's 32 bits
-    // this field for now can be final, when TODO done can be set 
-    // individually for each algortihm
-    private static final int ENC_KEY_BITS = 32;
+    // A secure random generator, used in chossing a random key
+    private final SecureRandom random;
     
-    // number of bits for secret and public keys, 
-    // for AES128 it's 128 bits
-    private static final int PUB_SEC_KEY_BITS = 128;
-    
-    // Number of puzzles to be prepared (also number of secret, 
-    // public and encryption keys)
-    private static final int NUM_OF_PUZZLES = (int) Math.pow(2, ENC_KEY_BITS);
-    
-    // Message prefix used to encrypt and check decryption
-    private static final String PREFIX = "Puzzle#"; 
-    
-    // Key zero prefix used for encryption
-    private static final byte[] ENC_KEY_PREFIX = new byte[(PUB_SEC_KEY_BITS - ENC_KEY_BITS) / 8]; 
-    
-   
-    public MerklePuzzles() {
+    /**
+     * Create an instance of merkle puzzles with a specified 
+     * algorithm to be used for encryption and decryption, as well as
+     * specified prefix to be used to encrypt the puzzles.
+     * @param algo
+     * @param pref 
+     */
+    public MerklePuzzles(algorithms algo, String pref) {
         try {
-            setEncryptionKeys() ;
-            setSecretKeys();
-            setPublicKeys();
-            setPuzzles();
+            switch(algo) {
+                case DES :
+                    setOptions("DES", 24, 68);
+                    break;
+                case AES :
+                    setOptions("AES", 32, 128);
+                    break;
+                case DESede :
+                    setOptions("DESede", 56, 192);
+                    break;
+                default :
+                    setOptions("AES", 32, 128);
+                    break;
+            }
+            
+            cipher = Cipher.getInstance(algorithm);
         } catch (NoSuchAlgorithmException ex) {
             Logger.getLogger(MerklePuzzles.class.getName()).log(Level.SEVERE, null, ex);
         } catch (NoSuchPaddingException ex) {
             Logger.getLogger(MerklePuzzles.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        random = new SecureRandom();
+        prefix = pref;
+    }
+    
+    /**
+     * Set algorithm and key lengths.
+     * @param algorithm
+     * @param encKeyLen
+     * @param secKeyLen 
+     */
+    private void setOptions(String algorithm, int encKeyLen, int secKeyLen) {
+        this.algorithm = algorithm;
+        this.encKeyLen = encKeyLen;
+        this.encKeyLenBytes = encKeyLen / 8;
+        this.secKeyLen = secKeyLen;
+        this.secKeyLenBytes = secKeyLen / 8;
+    }
+    
+    /**
+     * Create a random string. Used for creating a key. 
+     * @param bytes - number of bytes on which the random string should be stored
+     * @return the random string
+     */
+    public String randomString(int bytes) {
+        String k = new BigInteger(10000, random)
+                .toString(32)
+                .substring(0, bytes);
+        return k;
+        
+    }
+    
+    /**
+     * Choose random keys for encryption of the puzzles.
+     * @return 
+     */
+    public SecretKey randomEncKey() {
+        byte[] preKey = randomString(encKeyLenBytes).getBytes();
+        byte[] realKey = new byte[secKeyLenBytes];
+        
+        System.arraycopy(preKey, 0, realKey, 0, encKeyLenBytes);
+        
+        SecretKey sks = new SecretKeySpec(realKey, algorithm);
+        return sks;
+    }
+    
+    /**
+     * Encrypt a message with a secret key. Used when constructing puzzles.
+     * @param key
+     * @param message
+     * @return an encryption of a message
+     */
+    public byte[] encrypt(SecretKey key, String message) {
+        byte[] byteMsg = message.getBytes();
+        try {
+            cipher.init(Cipher.ENCRYPT_MODE, key);
+            byte[] ciphertext = cipher.doFinal(byteMsg);
+            return ciphertext;
         } catch (InvalidKeyException ex) {
             Logger.getLogger(MerklePuzzles.class.getName()).log(Level.SEVERE, null, ex);
         } catch (IllegalBlockSizeException ex) {
@@ -77,134 +147,84 @@ public class MerklePuzzles {
         } catch (BadPaddingException ex) {
             Logger.getLogger(MerklePuzzles.class.getName()).log(Level.SEVERE, null, ex);
         }
+        return null;
+    } 
+    
+    /**
+     * Decrypt a ciphertext using a secret key. May be used for solving the puzzle.
+     * @param key
+     * @param ciphertext
+     * @return a decyption of a ciphertext
+     */
+    public String decrypt(SecretKey key, byte[] ciphertext) {
+        try {
+            cipher.init(Cipher.DECRYPT_MODE, key);
+            byte[] decipherBytes = cipher.doFinal(ciphertext);
+            String plaintext = new String(decipherBytes);
+            return plaintext;
+        } catch (IllegalBlockSizeException ex) {
+            Logger.getLogger(MerklePuzzles.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (BadPaddingException ex) {
+            Logger.getLogger(MerklePuzzles.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (InvalidKeyException ex) {
+            Logger.getLogger(MerklePuzzles.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return null;
     }
     
-    public ArrayList<byte[]> getPuzzles() {
+    /**
+     * Makes one puzzle - encrypted (prefix || secret key || public key).
+     * @param key - encryption key
+     * @return one encrypted message - a puzzle
+     */
+    public byte[] puzzle(SecretKey key) {
+        String secretKey = randomString(secKeyLenBytes);
+        String publicKey = randomString(secKeyLenBytes);
+        String plainPuzzle = prefix + secretKey + publicKey;
+        byte[] puzzle = encrypt(key, plainPuzzle);
+        return puzzle;
+    }
+    
+    /**
+     * Make puzzles. Beware of the memory usage. 
+     * TODO : save puzzles into a file.
+     * @param key - to be used for encryption
+     * @param numOfPuzzles - number of puzzles to create
+     * @return instance of ArrayList containing puzzles - encrypted messages.
+     */
+    public ArrayList<byte[]> puzzles(SecretKey key, int numOfPuzzles) {
+        ArrayList<byte[]> puzzles = new ArrayList<byte[]>(numOfPuzzles);
+        for(int i = 0; i < numOfPuzzles; i++) {
+            puzzles.add(i, puzzle(key));
+        }
         return puzzles;
     }
     
-    private void setEncryptionKeys() 
-    {
-       encryptionKeys = randomKeys(ENC_KEY_BITS, NUM_OF_PUZZLES, ENC_KEY_PREFIX);
-    }
-    
-    private void setSecretKeys() 
-    {
-       secretKeys = randomKeys(PUB_SEC_KEY_BITS, NUM_OF_PUZZLES);
-    }
-    
-    private void setPublicKeys()
-    {
-       publicKeys = randomKeys(PUB_SEC_KEY_BITS, NUM_OF_PUZZLES);
-    }
-    
     /**
-     *
-     * @throws NoSuchAlgorithmException
-     * @throws NoSuchPaddingException
-     * @throws java.security.InvalidKeyException
-     * @throws javax.crypto.IllegalBlockSizeException
-     * @throws javax.crypto.BadPaddingException
+     * Get the algorithm to be used. Helps in solving.
+     * @return 
      */
-    private void setPuzzles() throws NoSuchAlgorithmException, 
-            NoSuchPaddingException, InvalidKeyException, 
-            IllegalBlockSizeException, BadPaddingException {
-        
-        puzzles = new ArrayList<byte[]>();
-        byte[] prefix = PREFIX.getBytes();
-        
-        // Initialize the cipher
-        Cipher cipher = Cipher.getInstance(MERKLE_ALGORITHM);
-        
-        for(int i = 0; i < NUM_OF_PUZZLES; i++) {
-           
-           Key encKey = encryptionKeys.get(i);
-           byte[] pubKey = publicKeys.get(i).getEncoded();
-           byte[] secKey = secretKeys.get(i).getEncoded();
-           
-           cipher.init(Cipher.ENCRYPT_MODE, encKey);
-           
-           byte[] message = ArrayUtils.concatenate(prefix, 
-                   ArrayUtils.concatenate(pubKey, secKey));
-           
-           byte[] puzzle = cipher.doFinal(message);
+    public String getAlgorithm() {
+        return algorithm;
+    }
 
-           puzzles.add(puzzle);
-        }
-        
-    }
-    
-    public void solvePuzzles() {
-        
-    }
-    
     /**
-     * 
-     * 
-     * @param bits  the number of bits for storing the message
-     * @param loop  how many messages to be produced
-     * @return      an instance of ArrayList containing random keys
+     * Get the prefix of the encrypted message.
+     * @return 
      */
-    private static ArrayList<Key> randomKeys(int bits, int loop) {
-        
-        int bytes = bits / 8;
-        ArrayList<Key> keys = new ArrayList<Key>();
-        SecureRandom random = new SecureRandom();
-        
-        for (int i = 0; i < loop; i++) {
-            byte[] message = new byte[bytes];
-            random.nextBytes(message);
-            Key key = new SecretKeySpec(message, 0, message.length, "AES");
-            keys.add(key);
-        }
-        
-        return keys;
-    }
-    
-    /**
-     * 
-     * @param bits   the number of bits for storing the random part of a key
-     * @param loop   how many keys to be produced
-     * @param prefix the prefix of a key 
-     * @return an instance of ArrayLisrt contaning random keys.
-     */
-    private static ArrayList<Key> randomKeys(int bits, int loop, byte[] prefix)
-    {
-        int bytes = bits / 8;
-        ArrayList<Key> keys = new ArrayList<Key>();
-        SecureRandom random = new SecureRandom();
-        
-        for (int i = 0; i < loop; i++) {
-            byte[] message = new byte[bytes];
-            random.nextBytes(message);
-            byte[] wholeMsg = ArrayUtils.concatenate(prefix, message);
-            Key key = new SecretKeySpec(wholeMsg, 0, wholeMsg.length, "AES");
-            keys.add(key);
-        }
-        
-        return keys;
+    public String getPrefix() {
+        return prefix;
     }
     
     
-    /**
-     *  Test the class working
-     * @param args
-     */
     public static void main(String args[]) {
-     
-       
-        MerklePuzzles mp = new MerklePuzzles();
-        ArrayList<byte[]> puzzles = mp.getPuzzles();
-
-        byte[] puzzle = puzzles.get(0);
-
-        for(byte b : puzzle) {
-            System.out.print(String.valueOf(b));
-        }
-   
- }
-
- 
+        MerklePuzzles mp = new MerklePuzzles(algorithms.AES, "Pref");
+        SecretKey sk = mp.randomEncKey();
+        
+        ArrayList<byte[]> puzzles = mp.puzzles(sk, 100000);
+        System.out.println(puzzles.size());
+        
+    }
     
     
 }
