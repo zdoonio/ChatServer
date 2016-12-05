@@ -1,7 +1,8 @@
-package com.standard;
+package com.security;
 
 import java.io.*;
 import java.net.*;
+import java.security.PublicKey;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -254,11 +255,11 @@ public class Server {
 					keepGoing = false;
 					break;
 				case ChatMessage.WHOISIN:
-					writeMsg("List of the users connected at " + sdf.format(new Date()) + "\n");
+					writeMsgNormal("List of the users connected at " + sdf.format(new Date()) + "\n");
 					// scan al the users connected
 					for(int i = 0; i < al.size(); ++i) {
 						ClientThread ct = al.get(i);
-						writeMsg((i+1) + ") " + ct.username + " since " + ct.date);
+						writeMsgNormal((i+1) + ") " + ct.username + " since " + ct.date);
 					}
 					break;
 				}
@@ -289,7 +290,7 @@ public class Server {
 		/*
 		 * Write a String to the Client output stream
 		 */
-		private boolean writeMsg(String msg) {
+		private boolean writeMsgNormal(String msg) {
 			// if Client is still connected send the message to it
 			if(!socket.isConnected()) {
 				close();
@@ -306,7 +307,68 @@ public class Server {
 			}
 			return true;
 		}
+		
+		private boolean writeMsg(String msg) throws IOException, ReflectiveOperationException, IOException {
+			// if Client is still connected send the message to it
+			final PublicKey publicKey = null;
+			byte[] encrypted;
+			if(!socket.isConnected()) {
+				close();
+				return false;
+			}
+			// write the message to the stream
+			try {
+				encrypted = Rsa.encrypt(msg, publicKey);
+				sOutput.writeObject(encrypted);
+			}
+			// if an error occurs, do not abort just inform the user
+			catch(IOException e) {
+				display("Error sending message to " + username);
+				display(e.toString());
+			}
+			return true;
+		}
+		
+		private boolean sendKeyToClient() throws FileNotFoundException, ClassNotFoundException, IOException
+			{
+			
+				String publicKey = Rsa.sendPublicKey();
+				
+				// if Client is still connected send the message to it
+				
+				
+				if(!socket.isConnected()) {
+					close();
+					return false;}
+					try {
+						
+						// !!!!!!!!!!!!!!!!!!!DODAĆ METODE W KLIENCIE !!!!!!!!!!
+						sOutput.writeObject(publicKey);
+					}
+					// if an error occurs, do not abort just inform the user
+					catch(IOException e) {
+						display("Error sending message to " + username);
+						display(e.toString());
+					}
+					return true;
+				}
+		/*
+	private void authentication(){
+			
+			if(!socket.isConnected()) {
+				close();
+				
+			}
+			try {
+				PrintStream out = new x(new FileOutputStream("output.txt"));
+				sOutput.writeObject(out);
+			}
+			
+			catch(IOException e) {
+				display("Bad connection!" + username);
+				display(e.toString());
+			}
+			
+		}*/
 	}
 }
-
-

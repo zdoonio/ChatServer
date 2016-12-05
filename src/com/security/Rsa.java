@@ -2,9 +2,11 @@ package com.security;
 
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -34,6 +36,8 @@ public class Rsa {
    * String to hold name of the public key file.
    */
   public static final String PUBLIC_KEY_FILE = "C:/keys/public.key";
+
+private static ObjectInputStream inputStream;
 
   /**
    * Generate key which contains a pair of private and public key using 1024
@@ -126,7 +130,7 @@ public class Rsa {
    * @param text
    *          :encrypted text
    * @param key
-   *          :The private key
+   *          :The private keythrows FileNotFoundException, IOException, ClassNotFoundException
    * @return plain text
    * @throws java.lang.Exception
    */
@@ -146,6 +150,24 @@ public class Rsa {
 
     return new String(dectyptedText);
   }
+  
+  @SuppressWarnings("resource")
+public static String sendPublicKey () throws FileNotFoundException, IOException, ClassNotFoundException{
+	  ObjectInputStream inputStream = null;
+	  inputStream = new ObjectInputStream(new FileInputStream(PUBLIC_KEY_FILE));
+      final PublicKey publicKey = (PublicKey) inputStream.readObject();
+      return publicKey.toString();
+  }
+  
+  
+  public static PublicKey getPublicKey() throws FileNotFoundException, IOException, ClassNotFoundException{
+	  inputStream = new ObjectInputStream(new FileInputStream(PUBLIC_KEY_FILE));
+      final PublicKey publicKey = (PublicKey) inputStream.readObject();
+	return publicKey;
+      
+  }
+  
+  
 
   /**
    * Test the EncryptionUtil
