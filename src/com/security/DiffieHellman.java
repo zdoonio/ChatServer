@@ -10,6 +10,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.KeySpec;
+import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.crypto.BadPaddingException;
@@ -221,11 +222,14 @@ public class DiffieHellman {
     } 
 
     
-    
+    /**
+     * How use this class when agreeing on a key
+     * @param args 
+     */
     public static void main(String[] args) {
         
         String keyalgo = "AES";
-        String cipheralgo = "AES/ECB/PKCS5Padding";
+        String cipheralgo = "AES/CBC/PKCS5Padding";
         
         try {
             int blocksize = Cipher.getInstance(cipheralgo).getBlockSize();
@@ -241,11 +245,13 @@ public class DiffieHellman {
             df.generateSharedSecret();
             df2.generateSharedSecret();
 
+            // jeśli mode to CBC, trzeba podać IV
             IvParameterSpec iv = IvGenerator.generateIV(blocksize);
 
-            byte[] encryption = df.encrypt("Co chciałeś, ążźćńópqrś?", keyalgo, cipheralgo);
-            String decryption = df2.decrypt(encryption, keyalgo, cipheralgo);
-
+            byte[] encryption = df.encrypt("111111112222222211111111222222221111111122222222", keyalgo, cipheralgo, iv);
+            System.out.println(Arrays.toString(encryption));
+            
+            String decryption = df2.decrypt(encryption, keyalgo, cipheralgo, iv);
             System.out.println(decryption);
             
         } catch (NoSuchAlgorithmException ex) {
