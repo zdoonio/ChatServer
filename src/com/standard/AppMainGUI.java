@@ -3,11 +3,12 @@ package com.standard;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
-import java.util.Date;
+
 
 public class AppMainGUI extends JFrame implements ActionListener {
 	
 	private JButton clientGUI, serverGUI;
+	private JComboBox securityChooser;
 	
 	/**
 	 * 
@@ -17,7 +18,7 @@ public class AppMainGUI extends JFrame implements ActionListener {
 
 	public AppMainGUI() {
 		//WINDOW INIT
-		setSize(200,100);
+		setSize(200,150);
 		setName("Secured Chat Server v0.3");
 		setLayout(null);
 		setResizable(false);
@@ -31,6 +32,16 @@ public class AppMainGUI extends JFrame implements ActionListener {
 		clientGUI.addActionListener(this);
 		serverGUI.addActionListener(this);
 		
+		//CHOOSER INIT
+		securityChooser = new JComboBox();
+		securityChooser.setBounds(20, 70, 150, 20);
+		securityChooser.addItem("RSA");
+		securityChooser.addItem("Diffie-Helman");
+		securityChooser.addItem("Merkle Puzzel's");
+		securityChooser.addItem("TTP");
+		securityChooser.addItem("PreDistributed");
+		add(securityChooser);
+		securityChooser.addActionListener(this);
 	}
 	
 	public static void main(String[] args) {
