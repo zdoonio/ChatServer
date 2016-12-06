@@ -34,7 +34,7 @@ public class AppMainGUI extends JFrame implements ActionListener {
 		
 		//CHOOSER INIT
 		securityChooser = new JComboBox();
-		securityChooser.setBounds(20, 70, 150, 20);
+		securityChooser.setBounds(20, 80, 150, 20);
 		securityChooser.addItem("RSA");
 		securityChooser.addItem("Diffie-Helman");
 		securityChooser.addItem("Merkle Puzzel's");
