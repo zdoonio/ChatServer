@@ -1,4 +1,4 @@
-# ChatServer Created by Dominik Zduńczyk, Karol Niewiadomski
+# ChatServer Created by Dominik Zduńczyk, Karol Niewiadomski, Piotr Kopczuk
 
 THIS IS SERVER GIT REPO
 
@@ -9,14 +9,12 @@ the system must be able to be implemented in a single application that, after ru
 allows the generation and exchange of secrets between both instances.
 
 Among others to think about, the system should provide the following basic functionalities:
-#1. Generation of a cryptographic secret from passwords entered by the user, namely through algorithms 
-#such as Password Based Key Derivation Function 2 (PBKDF2);
+#1. Generation of a cryptographic secret from passwords entered by the user, namely through algorithms such as Password Based Key Derivation Function 2 (PBKDF2);
 #2. Exchange a cryptographic secret using the DiffieHellman key agreement protocol;
 #3. Exchange a cryptographic secret using Merkle Puzzles;
 #4. Exchange a cryptographic secret using Rivest Shamir Adleman (RSA);
 #5. Distribution of new cipher keys from pre-distributed keys;
-#6. Distribution of new cipher keys using a trusted agent (in this case, the developed application must 
-#allow one of the instances to be configured as a trusted agent)
+#6. Distribution of new cipher keys using a trusted agent (in this case, the developed application must allow one of the instances to be configured as a trusted agent)
 
 The developed application can work in Client Line Interface (CLI) mode or provide
 A Graphical User Interface (GUI). Eventually, this system can be implemented for mobile devices, namely for the Android platform.
