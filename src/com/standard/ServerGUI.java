@@ -1,4 +1,4 @@
-package com.security;
+package com.standard;
 
 import javax.swing.*;
 import java.awt.*;

@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.security.InvalidKeyException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -21,7 +22,9 @@ import javax.crypto.SecretKey;
  */
 public class MerklePuzzlesSolver {
     
-    // an instance of Merkle Puzzles to be used
+    /**
+     * an instance of Merkle Puzzles to be used
+     **/
     private final MerklePuzzles merklePuzzle;
     
     /**
@@ -158,20 +161,17 @@ public class MerklePuzzlesSolver {
     }
     
     public static void main(String[] args) {
-        
-            MerklePuzzles mp = new MerklePuzzles(MerklePuzzles.algorithms.AES);
-            SecretKey sk = mp.randomEncKey();
-            mp.puzzles(sk, 10000, null);
-            
-            MerklePuzzlesSolver mps = new MerklePuzzlesSolver(mp);
-            
-            mps.solve("puzzles.txt");
+
+        MerklePuzzles mp = new MerklePuzzles(MerklePuzzles.algorithms.DES);
+        SecretKey sk = mp.randomEncKey();
+        mp.puzzles(sk, 10, null);
+
+        MerklePuzzlesSolver mps = new MerklePuzzlesSolver(mp);
+
+        byte[] solve = mps.solve("puzzles.txt");
+        System.out.println(Arrays.toString(solve));
+
 
     }
-    
-    
-    
-    
-    
     
 }

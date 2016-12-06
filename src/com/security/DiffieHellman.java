@@ -248,7 +248,8 @@ public class DiffieHellman {
             // jeśli mode to CBC, trzeba podać IV
             IvParameterSpec iv = IvGenerator.generateIV(blocksize);
 
-            byte[] encryption = df.encrypt("111111112222222211111111222222221111111122222222", keyalgo, cipheralgo, iv);
+            byte[] encryption = df.encrypt("111111112222222211111111"
+                    + "222222221111111122222222", keyalgo, cipheralgo, iv);
             System.out.println(Arrays.toString(encryption));
             
             String decryption = df2.decrypt(encryption, keyalgo, cipheralgo, iv);

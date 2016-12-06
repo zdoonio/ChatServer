@@ -1,10 +1,13 @@
-package com.security;
+package com.standard;
 
+import com.security.*;
 import java.io.*;
 import java.net.*;
 import java.security.PublicKey;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /*
  * The server that can be run both as a console application or a GUI
@@ -117,7 +120,7 @@ public class Server {
 	/*
 	 *  to broadcast a message to all Clients
 	 */
-	private synchronized void broadcast(String message) {
+	private synchronized void broadcast(String message) throws IOException, ReflectiveOperationException {
 		// add HH:mm:ss and \n to the message
 		String time = sdf.format(new Date());
 		String messageLf = time + " " + message + "\n";
@@ -228,40 +231,49 @@ public class Server {
 		// what will run forever
 		public void run() {
 			// to loop until LOGOUT
+                        Rsa.generateKey();
 			boolean keepGoing = true;
 			while(keepGoing) {
-				// read a String (which is an object)
 				try {
-					cm = (ChatMessage) sInput.readObject();
+                                    // read a String (which is an object)
+                                    try {
+                                        cm = (ChatMessage) sInput.readObject();
+                                    }
+                                    catch (IOException e) {
+                                        display(username + " Exception reading Streams: " + e);
+                                        break;
+                                    }
+                                    catch(ClassNotFoundException e2) {
+                                        break;
+                                    }
+                                    // the messaage part of the ChatMessage
+                                    String message = cm.getMessage();
+                                    
+                                    // Switch on the type of message receive
+                                    switch(cm.getType()) {
+                                        
+                                        case ChatMessage.MESSAGE:
+                                            broadcast(username + ": " + message);
+                                            break;
+                                        case ChatMessage.LOGOUT:
+                                            display(username + " disconnected with a LOGOUT message.");
+                                            keepGoing = false;
+                                            break;
+                                        case ChatMessage.WHOISIN:
+                                            writeMsgNormal("List of the users connected at " + sdf.format(new Date()) + "\n");
+                                            // scan al the users connected
+                                            for(int i = 0; i < al.size(); ++i) {
+                                                ClientThread ct = al.get(i);
+                                                writeMsgNormal((i+1) + ") " + ct.username + " since " + ct.date);
+                                            }
+                                            break;
+                                    }
+                                }
+				catch (IOException ex) {
+					Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
 				}
-				catch (IOException e) {
-					display(username + " Exception reading Streams: " + e);
-					break;				
-				}
-				catch(ClassNotFoundException e2) {
-					break;
-				}
-				// the messaage part of the ChatMessage
-				String message = cm.getMessage();
-
-				// Switch on the type of message receive
-				switch(cm.getType()) {
-
-				case ChatMessage.MESSAGE:
-					broadcast(username + ": " + message);
-					break;
-				case ChatMessage.LOGOUT:
-					display(username + " disconnected with a LOGOUT message.");
-					keepGoing = false;
-					break;
-				case ChatMessage.WHOISIN:
-					writeMsgNormal("List of the users connected at " + sdf.format(new Date()) + "\n");
-					// scan al the users connected
-					for(int i = 0; i < al.size(); ++i) {
-						ClientThread ct = al.get(i);
-						writeMsgNormal((i+1) + ") " + ct.username + " since " + ct.date);
-					}
-					break;
+				catch(ReflectiveOperationException ex) {
+                                Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
 				}
 			}
 			// remove myself from the arrayList containing the list of the
