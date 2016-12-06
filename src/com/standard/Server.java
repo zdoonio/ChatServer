@@ -76,6 +76,7 @@ public class Server {
 					try {
 					tc.sInput.close();
 					tc.sOutput.close();
+					tc.sOutputRSA.close();
 					tc.socket.close();
 					}
 					catch(IOException ioE) {
@@ -135,7 +136,7 @@ public class Server {
 		for(int i = al.size(); --i >= 0;) {
 			ClientThread ct = al.get(i);
 			// try to write to the Client if it fails remove it from the list
-			if(!ct.writeMsg(messageLf)) {
+			if(!ct.writeMsgRsa(messageLf)) {
 				al.remove(i);
 				display("Disconnected Client " + ct.username + " removed from list.");
 			}
@@ -192,6 +193,7 @@ public class Server {
 		Socket socket;
 		ObjectInputStream sInput;
 		ObjectOutputStream sOutput;
+		ObjectOutputStream sOutputRSA;
 		// my unique id (easier for deconnection)
 		int id;
 		// the Username of the Client
@@ -213,6 +215,7 @@ public class Server {
 				// create output first
 				sOutput = new ObjectOutputStream(socket.getOutputStream());
 				sInput  = new ObjectInputStream(socket.getInputStream());
+				sOutputRSA 	= new ObjectOutputStream(socket.getOutputStream());
 				// read the username
 				username = (String) sInput.readObject();
 				display(username + " just connected.");
@@ -260,11 +263,11 @@ public class Server {
                                             keepGoing = false;
                                             break;
                                         case ChatMessage.WHOISIN:
-                                            writeMsgNormal("List of the users connected at " + sdf.format(new Date()) + "\n");
+                                            writeMsg("List of the users connected at " + sdf.format(new Date()) + "\n");
                                             // scan al the users connected
                                             for(int i = 0; i < al.size(); ++i) {
                                                 ClientThread ct = al.get(i);
-                                                writeMsgNormal((i+1) + ") " + ct.username + " since " + ct.date);
+                                                writeMsg((i+1) + ") " + ct.username + " since " + ct.date);
                                             }
                                             break;
                                     }
@@ -290,6 +293,10 @@ public class Server {
 			}
 			catch(Exception e) {}
 			try {
+				if(sOutputRSA != null) sOutputRSA.close();
+			}
+			catch(Exception e) {}
+			try {
 				if(sInput != null) sInput.close();
 			}
 			catch(Exception e) {};
@@ -302,7 +309,7 @@ public class Server {
 		/*
 		 * Write a String to the Client output stream
 		 */
-		private boolean writeMsgNormal(String msg) {
+		private boolean writeMsg(String msg) {
 			// if Client is still connected send the message to it
 			if(!socket.isConnected()) {
 				close();
@@ -320,7 +327,7 @@ public class Server {
 			return true;
 		}
 		
-		private boolean writeMsg(String msg) throws IOException, ReflectiveOperationException, IOException {
+		private boolean writeMsgRsa(String msg) throws IOException, ReflectiveOperationException, IOException {
 			// if Client is still connected send the message to it
 			final PublicKey publicKey = null;
 			byte[] encrypted;
@@ -331,7 +338,7 @@ public class Server {
 			// write the message to the stream
 			try {
 				encrypted = Rsa.encrypt(msg, publicKey);
-				sOutput.writeObject(encrypted);
+				sOutputRSA.writeObject(encrypted);
 			}
 			// if an error occurs, do not abort just inform the user
 			catch(IOException e) {
