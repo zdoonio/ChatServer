@@ -37,7 +37,7 @@ public class FileUtils {
     
     public static String getLine(String filename, int linenumber) {
         try {
-            return Files.readAllLines(Paths.get(filename)).get(linenumber);
+            return Files.readAllLines(Paths.get(filename)).get(linenumber); //builduje sie
         } catch (IOException ex) {
             Logger.getLogger(FileUtils.class.getName()).log(Level.SEVERE, null, ex);
         }

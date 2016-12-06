@@ -44,7 +44,7 @@ public class DiffieHellman {
     public void generateKeys() {
         try {
             final KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("DH");
-            random = SecureRandom.getInstanceStrong();
+            random = SecureRandom.getInstanceStrong(); //buiduje Sie
             keyPairGenerator.initialize(1024, random);
             final KeyPair keyPair = keyPairGenerator.generateKeyPair();
             publicKey = (DHPublicKey) keyPair.getPublic();

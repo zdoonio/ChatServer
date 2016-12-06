@@ -30,12 +30,12 @@ public class Rsa {
   /**
    * String to hold the name of the private key file.
    */
-  public static final String PRIVATE_KEY_FILE = "private.key";
+  public static final String PRIVATE_KEY_FILE = "keys/private.key";
 
   /**
    * String to hold name of the public key file.
    */
-  public static final String PUBLIC_KEY_FILE = "public.key";
+  public static final String PUBLIC_KEY_FILE = "keys/public.key";
 
 private static ObjectInputStream inputStream;
 
