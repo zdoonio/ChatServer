@@ -33,9 +33,9 @@ public class KeyAgreementEntity {
     public enum algorithms {AES, DES, DESede};
     public enum modes {ECB, CBC};
     
-    public final String algorithm;
-    public final String mode;
-    public final String PADDING = "PKCS5Padding";
+    private final String algorithm;
+    private final String mode;
+    private final String PADDING = "PKCS5Padding";
     
     /**
      * Algorithm for key encryption. 
@@ -57,6 +57,10 @@ public class KeyAgreementEntity {
      * session key used for real encrypting 
      * and decrypting of messages.
      */
+    private SecretKey generatedSessionKey;
+    
+    private SecretKey decryptedSessionKey;
+    
     private SecretKey sessionKey;
     
     private final int sessionKeyLen;
@@ -104,7 +108,11 @@ public class KeyAgreementEntity {
     
     public void generateSessionKey() {
         SecretKeySpec sk = generateKey(sessionKeyLen, algorithm);
-        this.sessionKey = sk;
+        this.generatedSessionKey = sk;
+    }
+    
+    public SecretKeySpec generatePredistributedKey() {
+        return generateKey(KEY_SIZE, KEY_ALGO);
     }
     
     private SecretKeySpec generateKey(int keyLen, String algorithm) {
@@ -119,7 +127,7 @@ public class KeyAgreementEntity {
         try {
             Cipher cipher = Cipher.getInstance(KEY_ALGO);
             cipher.init(Cipher.ENCRYPT_MODE, predistributedKey, iv);
-            byte[] sessionKeyByte = sessionKey.getEncoded();
+            byte[] sessionKeyByte = generatedSessionKey.getEncoded();
             byte[] encrypted = cipher.doFinal(sessionKeyByte);
             return encrypted;
         } catch (NoSuchAlgorithmException ex) {
@@ -139,13 +147,65 @@ public class KeyAgreementEntity {
     }
     
     public void decryptSessionKey(byte[] encSessionKey, IvParameterSpec iv) {
-        
+        try {
+            Cipher cipher = Cipher.getInstance(KEY_ALGO);
+            cipher.init(Cipher.DECRYPT_MODE, predistributedKey, iv);
+            byte[] decrypted = cipher.doFinal(encSessionKey);
+            decryptedSessionKey = new SecretKeySpec(decrypted, KEY_ALGO);
+            
+            
+        } catch (NoSuchAlgorithmException ex) {
+            Logger.getLogger(KeyAgreementEntity.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (NoSuchPaddingException ex) {
+            Logger.getLogger(KeyAgreementEntity.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (IllegalBlockSizeException ex) {
+            Logger.getLogger(KeyAgreementEntity.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (BadPaddingException ex) {
+            Logger.getLogger(KeyAgreementEntity.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (InvalidKeyException ex) {
+            Logger.getLogger(KeyAgreementEntity.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (InvalidAlgorithmParameterException ex) {
+            Logger.getLogger(KeyAgreementEntity.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+    
+    private void agreeOnDecryptedSessionKey() {
+        sessionKey = decryptedSessionKey;
+    }
+
+    private void agreeOnGeneratedSessionKey() {
+        sessionKey = generatedSessionKey;
     }
     
     
     public static void main(String args[]) {
-        KeyAgreementEntity Alice = new KeyAgreementEntity(algorithms.AES, modes.CBC);
         
+        try {
+            algorithms algo = algorithms.AES;
+            modes mode = modes.CBC;
+            
+            KeyAgreementEntity Alice = new KeyAgreementEntity(algo, mode);
+            KeyAgreementEntity Bob = new KeyAgreementEntity(algo, mode);
+            
+            IvParameterSpec iv = IvGenerator.generateIV(Cipher.getInstance("AES").getBlockSize());
+            
+            SecretKeySpec preKey = Alice.generatePredistributedKey();
+            
+            Bob.setPredistributedKey(preKey);
+            Alice.setPredistributedKey(preKey);
+            
+            Bob.generateSessionKey();
+            byte[] encryptedSessionKey = Bob.encryptSessionKey(iv);
+            Alice.decryptSessionKey(encryptedSessionKey, iv);
+            
+            Alice.agreeOnDecryptedSessionKey();
+            Bob.agreeOnGeneratedSessionKey();
+
+        } catch (NoSuchAlgorithmException ex) {
+            Logger.getLogger(KeyAgreementEntity.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (NoSuchPaddingException ex) {
+            Logger.getLogger(KeyAgreementEntity.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
     
 }
