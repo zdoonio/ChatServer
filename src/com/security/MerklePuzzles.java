@@ -10,6 +10,7 @@ import com.utils.ArrayUtils;
 import com.utils.FileUtils;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
@@ -67,6 +68,9 @@ public class MerklePuzzles {
     // Standard prefix
     public static final String PREFIX = "Puzzle#";
     
+    // final key to agree on
+    private SecretKey sessionKey;
+
     
     /**
      * Default constructor, setting AES as an algorithm 
@@ -281,6 +285,38 @@ public class MerklePuzzles {
         return prefix;
     }
 
+    public void agreeOnKey(SecretKey secretKey, String publicKey, String fileName) throws 
+            InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
+        String filename = fileName == null ? FILE_NAME : fileName;
+        File file = null;
+        try {
+            file = new File(filename);
+            int numOfLines = FileUtils.countLines(file);
+            int lineNum = 0;
+            String decryptLine = null;
+            boolean found = false;
+            while(!found & (lineNum < numOfLines )) {
+                String line = FileUtils.getLine(filename, lineNum);
+                byte[] lineByte = ArrayUtils.parseBytes(line);
+                decryptLine = decrypt(secretKey, lineByte);
+                if(decryptLine
+                        .substring(prefix.length() + secKeyLenBytes, decryptLine.length())
+                        .equals(publicKey) ) found = true;
+                lineNum += 1;
+            }
+            
+            if(found) {
+                String sessionKeyStr = decryptLine.substring(prefix.length(), 2*secKeyLenBytes - 1);
+                sessionKey = new SecretKeySpec(sessionKeyStr.getBytes(), algorithm);
+            }
+
+        } catch (FileNotFoundException ex) {
+            Logger.getLogger(MerklePuzzles.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (IOException ex) {
+            Logger.getLogger(MerklePuzzles.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
+    }
     
     
     public static void main(String args[]) {
@@ -291,7 +327,7 @@ public class MerklePuzzles {
             ArrayList<byte[]> puzzles = mp.puzzles(sk, 3);
             byte[] puzzleByte = puzzles.get(0);
             String decryption = mp.decrypt(sk, puzzleByte);
-            System.out.println(decryption);
+            
         } catch (InvalidKeyException ex) {
             Logger.getLogger(MerklePuzzles.class.getName()).log(Level.SEVERE, null, ex);
         } catch (IllegalBlockSizeException ex) {

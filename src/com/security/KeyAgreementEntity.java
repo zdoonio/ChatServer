@@ -142,4 +142,10 @@ public class KeyAgreementEntity {
         
     }
     
+    
+    public static void main(String args[]) {
+        KeyAgreementEntity Alice = new KeyAgreementEntity(algorithms.AES, modes.CBC);
+        
+    }
+    
 }

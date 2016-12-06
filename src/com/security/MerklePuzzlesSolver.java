@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.security.InvalidKeyException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -41,10 +40,10 @@ public class MerklePuzzlesSolver {
      * @return the byte table containig PublicKey 
      * to send for agreeing on a secret key
      */
-    public byte[] solve(ArrayList<byte[]> puzzles) {
+    public String solve(ArrayList<byte[]> puzzles) {
         int puzzleNumber = chooseRandomPuzzle(puzzles.size());
         byte[] puzzle = puzzles.get(puzzleNumber);
-        byte[] solved = solve(puzzle);
+        String solved = solve(puzzle);
         return solved;
     }
     
@@ -54,14 +53,14 @@ public class MerklePuzzlesSolver {
      * @return the byte table containing PublicKey 
      * to send for agreeing on a secret key
      */
-    public byte[] solve(String filename) {
+    public String solve(String filename) {
         
         try {
             File file = new File(filename);
             int puzzleNumber = chooseRandomPuzzle(
                     FileUtils.countLines(file));
             byte[] puzzle = parsePuzzle(file, puzzleNumber);
-            byte[] solved = solve(puzzle);
+            String solved = solve(puzzle);
             return solved;
         } catch (IOException ex) {
             Logger.getLogger(MerklePuzzlesSolver.class.getName())
@@ -77,11 +76,11 @@ public class MerklePuzzlesSolver {
      * @param puzzle a puzzle to solve
      * @return a PublicKey 
      */
-    private byte[] solve(byte[] puzzle) {
+    private String solve(byte[] puzzle) {
         String prefix = merklePuzzle.getPrefix();
         int prefixLen = prefix.length();
         boolean isSolved = false;
-        byte[] publicKey;
+        String publicKey;
         String decryption = null;
         while(!isSolved) {
             try {
@@ -100,7 +99,7 @@ public class MerklePuzzlesSolver {
             }
         }
         
-        publicKey = solve(decryption, prefixLen).getBytes();
+        publicKey = solve(decryption, prefixLen);
         
         return publicKey == null ? null : publicKey;
     }
@@ -168,8 +167,8 @@ public class MerklePuzzlesSolver {
 
         MerklePuzzlesSolver mps = new MerklePuzzlesSolver(mp);
 
-        byte[] solve = mps.solve("puzzles.txt");
-        System.out.println(Arrays.toString(solve));
+        String solve = mps.solve("puzzles.txt");
+        System.out.println(solve);
 
 
     }
