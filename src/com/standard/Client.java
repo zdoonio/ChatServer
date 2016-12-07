@@ -5,7 +5,10 @@ package com.standard;
 
 import java.net.*;
 import java.io.*;
+import java.security.PublicKey;
 import java.util.*;
+
+import com.security.Rsa;
 
 
 
@@ -17,7 +20,7 @@ public class Client  {
 
 	// for I/O
 	private ObjectInputStream sInput;		// to read from the socket
-	private ObjectOutputStream sOutput;		// to write on the socket
+	private ObjectOutputStream sOutput;	// to write on the socket
 	private Socket socket;
 
 	// if I use a GUI or not
@@ -109,12 +112,20 @@ public class Client  {
 	 * To send a message to the server
 	 */
 	void sendMessage(ChatMessage msg) {
+			final PublicKey publicKey = null;
+			byte[] encrypted;
 		try {
+			
 			sOutput.writeObject(msg);
 		}
 		catch(IOException e) {
 			display("Exception writing to server: " + e);
 		}
+	}
+	
+	//to get public key from server
+	void getPublicKey(){
+		
 	}
 
 	/*
@@ -163,6 +174,7 @@ public class Client  {
 		int portNumber = 1500;
 		String serverAddress = "localhost";
 		String userName = "Anonymous";
+		Rsa.generateKey();
 
 		// depending of the number of arguments provided we fall through
 		switch(args.length) {
