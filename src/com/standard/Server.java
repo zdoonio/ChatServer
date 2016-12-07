@@ -309,7 +309,12 @@ public class Server {
 		/*
 		 * Write a String to the Client output stream
 		 */
-		private boolean writeMsg(String msg) {
+		private boolean writeMsg(String msg) throws IOException, IOException, ClassNotFoundException {
+			
+			ObjectInputStream inputStream = null;
+			inputStream = new ObjectInputStream(new FileInputStream(Rsa.PUBLIC_KEY_FILE));
+		    final PublicKey publicKey = (PublicKey) inputStream.readObject();
+		    final byte[] encrypted ;
 			// if Client is still connected send the message to it
 			if(!socket.isConnected()) {
 				close();
@@ -317,7 +322,9 @@ public class Server {
 			}
 			// write the message to the stream
 			try {
-				sOutput.writeObject(msg);
+				encrypted = Rsa.encrypt(msg, publicKey);
+				sOutput.writeObject(encrypted);
+				//sOutput.writeObject(msg);
 			}
 			// if an error occurs, do not abort just inform the user
 			catch(IOException e) {
@@ -338,7 +345,7 @@ public class Server {
 			// write the message to the stream
 			try {
 				encrypted = Rsa.encrypt(msg, publicKey);
-				sOutputRSA.writeObject(encrypted);
+				sOutput.writeObject(encrypted);
 			}
 			// if an error occurs, do not abort just inform the user
 			catch(IOException e) {
@@ -348,7 +355,7 @@ public class Server {
 			return true;
 		}
 		
-		private boolean sendKeyToClient() throws FileNotFoundException, ClassNotFoundException, IOException
+		/*private boolean sendKeyToClient() throws FileNotFoundException, ClassNotFoundException, IOException
 			{
 			
 				String publicKey = Rsa.sendPublicKey();
@@ -370,7 +377,7 @@ public class Server {
 						display(e.toString());
 					}
 					return true;
-				}
+				}*/
 		/*
 	private void authentication(){
 			
